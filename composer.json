@@ -1,5 +1,5 @@
 {
-    "name": "ohanzee/helpers",
+    "name": "alle/ohanzee-helpers",
     "description": "Collection of helpers, small static classes for general purpose use",
     "homepage": "http://ohanzee.org/component/helpers",
     "license": "BSD-2-Clause",
@@ -27,7 +27,7 @@
         }
     },
     "require": {
-        "php": ">=5.4.0"
+        "php": ">=5.3.3"
     },
     "require-dev": {
         "codeception/codeception": "1.8.*@dev"
