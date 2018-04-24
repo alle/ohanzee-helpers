@@ -1,45 +1,5 @@
 <?php
 
-/**
- * Ohanzee Components by Kohana
- *
- * @package    Ohanzee
- * @author     Kohana Team <team@kohanaframework.org>
- * @copyright  2007-2014 Kohana Team
- * @link       http://ohanzee.org/
- * @license    http://ohanzee.org/license
- * @version    0.1.0
- *
- * BSD 2-CLAUSE LICENSE
- * 
- * This license is a legal agreement between you and the Kohana Team for the use
- * of Kohana Framework and Ohanzee Components (the "Software"). By obtaining the
- * Software you agree to comply with the terms and conditions of this license.
- * 
- * Copyright (c) 2007-2014 Kohana Team
- * All rights reserved.
- * 
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- * 
- * 1) Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2) Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
 namespace Ohanzee\Helper;
 
 class Arr
@@ -234,30 +194,6 @@ class Arr
 
         // Set key on inner-most array
         $array[array_shift($keys)] = $value;
-    }
-
-    /**
-     * Fill an array with a range of numbers.
-     *
-     *     // Fill an array with values 5, 10, 15, 20
-     *     $values = Arr::range(5, 20);
-     *
-     * @param   integer $step   stepping
-     * @param   integer $max    ending number
-     * @return  array
-     */
-    public static function range($step = 10, $max = 100)
-    {
-        if ($step < 1) {
-            return array();
-        }
-
-        $array = array();
-        for ($i = $step; $i <= $max; $i += $step) {
-            $array[$i] = $i;
-        }
-
-        return $array;
     }
 
     /**
@@ -571,5 +507,75 @@ class Arr
             }
         }
         return $flat;
+    }
+
+    /**
+     * Convert a two-dimension keyed array with key/value structure into an associated array.
+     *
+     *     $array = array(array('field' => 'fname', 'value' => 'John'), array('field' => 'lname', 'value' => 'Doe'));
+     *
+     *     // Convert the array
+     *     $array = Arr::fromMapping($array, false, 'field');
+     *
+     *     // The array will now be
+     *     array('fname' => 'John', 'lname' => 'Doe');
+     *
+     * @param array  $collection original array
+     * @param bool   $recursive  whether to recurse through the children
+     * @param string $key        the field defining the key
+     * @param string $value      the field defining the value
+     *
+     * @return array
+     */
+    public static function fromMapping(array $collection, $recursive = false, $key = 'name', $value = 'value')
+    {
+        foreach ($collection as $index => $obj) {
+            if (!is_array($obj) || !isset($obj[$key]) || !isset($obj[$value])) {
+                unset($collection[$index]);
+            }
+            if ($recursive && is_array($obj[$value]) && !static::isAssoc($obj[$value])) {
+                $collection[$index][$value] = static::fromMapping($obj[$value], $recursive, $key, $value);
+            }
+        }
+
+        if (function_exists('array_column')) {
+            return array_combine(array_column($collection, $key), array_column($collection, $value));
+        } else {
+            return array_combine(
+                static::path($collection, ['*', $key]),
+                static::path($collection, ['*', $value])
+            );
+        }
+    }
+
+    /**
+     * Convert a key/value array into two-dimension key/value structured array
+     *
+     *     $array = array('fname' => 'John', 'lname' => 'Doe');
+     *
+     *     // Convert the array
+     *     $array = Arr::toMapping($array, false, 'field');
+     *
+     *     // The array will now be
+     *     array(array('field' => 'fname', 'value' => 'John'), array('field' => 'lname', 'value' => 'Doe'));
+     *
+     * @param array  $array     original array
+     * @param bool   $recursive whether to recurse through the children
+     * @param string $key       the field defining the key
+     * @param string $value     the field defining the value
+     *
+     * @return array
+     */
+    public static function toMapping(array $array, $recursive = false, $key = 'name', $value = 'value')
+    {
+        foreach ($array as $index => $obj) {
+            $array[$index] = [
+                $key   => $index,
+                $value => is_array($obj) && static::isAssoc($obj) && $recursive
+                    ? static::toMapping($obj, $recursive) : $obj,
+            ];
+        }
+
+        return array_values($array);
     }
 }

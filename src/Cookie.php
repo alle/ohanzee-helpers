@@ -1,49 +1,11 @@
 <?php
 
-/**
- * Ohanzee Components by Kohana
- *
- * @package    Ohanzee
- * @author     Kohana Team <team@kohanaframework.org>
- * @copyright  2007-2014 Kohana Team
- * @link       http://ohanzee.org/
- * @license    http://ohanzee.org/license
- * @version    0.1.0
- *
- * BSD 2-CLAUSE LICENSE
- * 
- * This license is a legal agreement between you and the Kohana Team for the use
- * of Kohana Framework and Ohanzee Components (the "Software"). By obtaining the
- * Software you agree to comply with the terms and conditions of this license.
- * 
- * Copyright (c) 2007-2014 Kohana Team
- * All rights reserved.
- * 
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- * 
- * 1) Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2) Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
 namespace Ohanzee\Helper;
 
 class Cookie
 {
+    // Separate the salt and the value
+    const SALT_SEPARATOR = '~';
 
     /**
      * @var  string  Magic salt to add to the cookie
@@ -100,9 +62,9 @@ class Cookie
         // Find the position of the split between salt and contents
         $split = strlen(static::salt($key, null));
 
-        if (isset($cookie[$split]) && $cookie[$split] === '~') {
+        if (isset($cookie[$split]) && $cookie[$split] == static::SALT_SEPARATOR) {
             // Separate the salt and the value
-            list ($hash, $value) = explode('~', $cookie, 2);
+            list ($hash, $value) = explode(static::SALT_SEPARATOR, $cookie, 2);
 
             if (static::salt($key, $value) === $hash) {
                 // Cookie signature is valid
@@ -142,7 +104,7 @@ class Cookie
         }
 
         // Add the salt to the cookie value
-        $value = static::salt($name, $value).'~'.$value;
+        $value = static::salt($name, $value) . static::SALT_SEPARATOR. $value;
 
         return setcookie($name, $value, $expiration, static::$path, static::$domain, static::$secure, static::$httponly);
     }
@@ -177,15 +139,15 @@ class Cookie
     {
         // Require a valid salt
         if (!static::$salt) {
-            throw new InvalidArgumentException(
+            throw new UnexpectedValueException(
                 'A valid cookie salt is required. Please set Cookie::$salt before calling this method.' .
-                'For more information check the documentation'
+                'For more information check the documentation.'
             );
         }
 
         // Determine the user agent
         $agent = isset($_SERVER['HTTP_USER_AGENT']) ? strtolower($_SERVER['HTTP_USER_AGENT']) : 'unknown';
 
-        return sha1($agent.$name.$value.static::$salt);
+        return sha1($agent . $name . $value . static::$salt);
     }
 }
